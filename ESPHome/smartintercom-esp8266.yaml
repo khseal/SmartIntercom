@@ -57,6 +57,8 @@ esphome:
       board_build.f_cpu: 160000000L
       board_build.filesystem: littlefs
       board_build.ldscript: eagle.flash.4m2m.ld   
+      lib_ignore:
+        - SD
 #      build_flags: 
 #        - "-DSDCARD" # Поддержка SD карты 
 
