@@ -81,6 +81,9 @@ esphome:
   comment: "Перед прошивкой проверь наличие настроек wifi_ssid и wifi_password в файле \"SECRETS\" - кнопка вверху справа"
   libraries:
     - SPI
+    - ESP8266SdFat
+    - SDFS
+    - SD
     - ESP8266WiFi
     - LittleFS
     - I2S
@@ -88,14 +91,12 @@ esphome:
     - ESP8266Audio
   includes:
     - lib/ESPUtils.h
-    - lib/SD.h
   platformio_options:
       board_build.f_cpu: 160000000L
       board_build.filesystem: littlefs
       board_build.ldscript: eagle.flash.4m2m.ld   
-      lib_ignore:
-        - SD
-#      build_flags: 
+      build_flags: 
+        - "-UNO_GLOBAL_SERIAL"
 #        - "-DSDCARD" # Поддержка SD карты 
 
   on_boot:
