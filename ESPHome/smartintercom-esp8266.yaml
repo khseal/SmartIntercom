@@ -53,6 +53,7 @@ esphome:
     - ESP8266Audio
   includes:
     - lib/ESPUtils.h
+    - lib/SD.h
   platformio_options:
       board_build.f_cpu: 160000000L
       board_build.filesystem: littlefs
