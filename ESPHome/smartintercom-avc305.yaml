@@ -34,10 +34,10 @@ substitutions:
   call_code_detect_filter: 500ms    # Фильтр детектирования открытия по коду. Менее этого значения, плата не будет запускать режимы.
 
 #audio_support
-  play_user_access_allowed: playFile(audio_player, "/user_access_allowed.wav")
-  play_delivery_access_allowed: playFile(audio_player, "/delivery_access_allowed.wav")
-  play_access_denied: playFile(audio_player, "/access_denied.wav")
-  play_ring: playFile(audio_player, "/ring_call.wav")
+  play_user_access_allowed: id(audio_player).play("/user_access_allowed.wav")
+  play_delivery_access_allowed: id(audio_player).play("/delivery_access_allowed.wav")
+  play_access_denied: id(audio_player).play("/access_denied.wav")
+  play_ring: id(audio_player).play("/ring_call.wav")
 
 # Логика работы:
 # 
@@ -91,7 +91,6 @@ esphome:
     - ESP8266Audio
   includes:
     - lib/ESPUtils.h
-    - lib/ESPAudio.h
   platformio_options:
       board_build.f_cpu: 160000000L
       board_build.filesystem: littlefs
@@ -170,14 +169,19 @@ ota:
   password: "12345678"
 
 external_components: # fix for removal of custom component in esphome 2025.xx and up
+  - source:
+      type: local
+      path: esphome
+    components: [espaudio]
   - source: github://esphome/esphome@2024.12.4
     components: [ custom, custom_component ]
+
+espaudio:
+  id: audio_player
 
 custom_component:
   - id: ftp_server
     lambda: 'return {new FTPSrv("","")};' # (Логин, Пароль). По умолчанию anonymous  
-  - id: audio_player
-    lambda: 'return {new ESPAudio()};'
   - id: updater
     lambda: 'return {new FirmwareUpdate()};'
 
@@ -342,9 +346,9 @@ script:
                 then:
                   - if:
                       condition:
-                        lambda: 'return isPlaying(audio_player);'
+                        lambda: 'return id(audio_player).is_playing();'
                       then:
-                        lambda: 'stopFile(audio_player);'
+                        lambda: 'id(audio_player).stop();'
                   - output.turn_on: phone_up
                   - lambda: ${play_delivery_access_allowed};
                 else:
@@ -354,13 +358,13 @@ script:
                     then:
                       - if:
                           condition:
-                            lambda: 'return isPlaying(audio_player);'
+                            lambda: 'return id(audio_player).is_playing();'
                           then:
-                            lambda: 'stopFile(audio_player);'
+                            lambda: 'id(audio_player).stop();'
                       - output.turn_on: phone_up
                       - lambda: ${play_user_access_allowed};                   
             - wait_until:
-                lambda: 'return !isPlaying(audio_player);'
+                lambda: 'return !id(audio_player).is_playing();'
             - output.turn_off: phone_up
             - delay: $delay_before_open_door
             - output.turn_on: phone_up
@@ -410,13 +414,13 @@ script:
                 then:
                   - if:
                       condition:
-                        lambda: 'return isPlaying(audio_player);'
+                        lambda: 'return id(audio_player).is_playing();'
                       then:
-                        lambda: 'stopFile(audio_player);'
+                        lambda: 'id(audio_player).stop();'
                   - output.turn_on: phone_up
                   - lambda: ${play_access_denied};                  
                   - wait_until:
-                      lambda: 'return !isPlaying(audio_player);'
+                      lambda: 'return !id(audio_player).is_playing();'
                   - output.turn_off: phone_up
                   - delay: $delay_before_open_door
             - lambda: 'id(line_status).publish_state("${line_status_reject}");'
@@ -454,7 +458,7 @@ script:
             - output.turn_on: phone_up
             - lambda: ${play_ring};
             - wait_until:
-                lambda: 'return !isPlaying(audio_player);'
+                lambda: 'return !id(audio_player).is_playing();'
             - output.turn_off: phone_up
 
   # Скрипт ожидания активности
@@ -626,9 +630,9 @@ binary_sensor:
                 then:
                   - if:
                       condition:
-                        lambda: 'return isPlaying(audio_player);'
+                        lambda: 'return id(audio_player).is_playing();'
                       then:
-                        - lambda: 'stopFile(audio_player);'
+                        - lambda: 'id(audio_player).stop();'
                         - script.stop: play_ring_sound
                   - script.execute: play_ring_sound
       # Если это первый вызов, то поднимаем флаг активности линии, включаем индикацию вызова, и запускаем сценарии.
