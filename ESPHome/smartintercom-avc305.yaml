@@ -81,9 +81,6 @@ esphome:
   comment: "Перед прошивкой проверь наличие настроек wifi_ssid и wifi_password в файле \"SECRETS\" - кнопка вверху справа"
   libraries:
     - SPI
-    - ESP8266SdFat
-    - SDFS
-    - SD
     - ESP8266WiFi
     - LittleFS
     - I2S
