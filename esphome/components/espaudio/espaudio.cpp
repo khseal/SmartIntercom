@@ -15,7 +15,8 @@
 #endif
 
 #if defined(SDCARD)
-#include "SD.h"
+#define ESPAUDIO_SD_HEADER <SD.h>
+#include ESPAUDIO_SD_HEADER
 #include "AudioFileSourceSD.h"
 #define ESPAUDIO_FS SD
 #define ESPAUDIO_FS_STR "SD"

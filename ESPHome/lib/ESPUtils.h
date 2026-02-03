@@ -21,7 +21,8 @@ using esphome::text_sensor::TextSensor;
 #endif
 
 #if defined(SDCARD)
-    #include "SD.h"
+    #define ESPUTILS_SD_HEADER <SD.h>
+    #include ESPUTILS_SD_HEADER
     #define aFS SD
     #define CRITICAL_FREE 0
 #else
