@@ -33,9 +33,9 @@ substitutions:
   # delay_after_close_door: 2000ms    # Отпустили кнопку открытия двери, *** подождали *** ... Возвращаем управление на трубку (Number компонент after_close)
 
 #audio_support
-  play_user_access_allowed: playFile(audio_player, "/user_access_allowed.wav")
-  play_delivery_access_allowed: playFile(audio_player, "/delivery_access_allowed.wav")
-  play_access_denied: playFile(audio_player, "/access_denied.wav")
+  play_user_access_allowed: id(audio_player).play("/user_access_allowed.wav")
+  play_delivery_access_allowed: id(audio_player).play("/delivery_access_allowed.wav")
+  play_access_denied: id(audio_player).play("/access_denied.wav")
 
 esp8266:
   board: ${base}
@@ -56,7 +56,6 @@ esphome:
     - ESP8266Audio
   includes:
     - lib/ESPUtils.h
-    - lib/ESPAudio.h
   platformio_options:
       board_build.f_cpu: 160000000L
       board_build.filesystem: littlefs
@@ -135,14 +134,19 @@ ota:
   password: "12345678"
 
 external_components: # fix for removal of custom component in esphome 2025.xx and up
+  - source:
+      type: local
+      path: esphome
+    components: [espaudio]
   - source: github://esphome/esphome@2024.12.4
     components: [ custom, custom_component ]
+
+espaudio:
+  id: audio_player
 
 custom_component:
   - id: ftp_server
     lambda: 'return {new FTPSrv("","")};' # (Логин, Пароль). По умолчанию anonymous  
-  - id: audio_player
-    lambda: 'return {new ESPAudio()};'
   - id: updater
     lambda: 'return {new FirmwareUpdate()};'
 
@@ -313,7 +317,7 @@ script:
                   then:
                     lambda: ${play_user_access_allowed};                   
           - wait_until:
-              lambda: 'return !isPlaying(audio_player);'
+              lambda: 'return !id(audio_player).is_playing();'
           - delay: $delay_before_open_door
           - output.turn_on: open_door
           - lambda: 'id(line_status).publish_state("${line_status_open}");'
@@ -346,7 +350,7 @@ script:
               then:
                 - lambda: ${play_access_denied};                  
                 - wait_until:
-                    lambda: 'return !isPlaying(audio_player);'
+                    lambda: 'return !id(audio_player).is_playing();'
                 - delay: !lambda "return id(delay_open_time).state;"
           - lambda: 'id(line_status).publish_state("${line_status_reject}");'
           - output.turn_on: phone_down

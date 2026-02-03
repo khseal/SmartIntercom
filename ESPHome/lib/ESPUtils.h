@@ -1,6 +1,18 @@
-#include "esphome.h"
+#include "esphome/components/text_sensor/text_sensor.h"
+#include "esphome/core/component.h"
+#include "esphome/core/log.h"
 
-#if defined(ESP32) && !defined(USE_ESP32_VARIANT_ESP32C3)
+#include <Arduino.h>
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+
+using esphome::Component;
+using esphome::PollingComponent;
+using esphome::text_sensor::TextSensor;
+
+#if defined(USE_ESP32) && !defined(USE_ESP32_VARIANT_ESP32C3)
     #define LED 16
     #define FORMAT_FS_IF_FAILED true
 #else
@@ -23,10 +35,12 @@
 #define DEBUGf(format, ...) ESP_LOGD("FTP", format, ##__VA_ARGS__)
 #define FIRMWARE_VERSION "1.7.7"
 
-#if defined(ESP8266)
+#if defined(USE_ESP8266)
+    #include <Updater.h>
+    #include "esphome/components/custom_component/custom_component.h"
     #define DEBUGs(format, ...) ESP_LOGD("UPDATER", format, ##__VA_ARGS__)
     #define get_update_component(constructor) static_cast<FirmwareUpdate *> \
-    (const_cast<custom_component::CustomComponentConstructor *>(&constructor)->get_component(0))
+    (const_cast<esphome::custom_component::CustomComponentConstructor *>(&constructor)->get_component(0))
     #define startUpdate(FSComponent) get_update_component(FSComponent)->update_start()
     #define FIRMWARE_PATH "/firmware.bin"
     #define FIRMWARE_PATH_BAK "/firmware.bak"
@@ -95,7 +109,7 @@ class FSInfoSensor : public PollingComponent, public TextSensor {
 
         void setup() override {  
             this->mount_filesystem();
-            #if defined(ESP8266)
+            #if defined(USE_ESP8266)
                 if (aFS.exists(FIRMWARE_PATH)) firmware_current_version->publish_state("Доступно обновление");
                 else firmware_current_version->publish_state(FIRMWARE_VERSION);
             #else
@@ -106,7 +120,7 @@ class FSInfoSensor : public PollingComponent, public TextSensor {
         void update() override {
             if (this->fs_initialized_) {
                 char str[10] = "";
-                double base = log(max(this->get_fs_used() - CRITICAL_FREE, (int64_t) 0)) / log(1024);
+                double base = log(std::max(this->get_fs_used() - CRITICAL_FREE, (int64_t) 0)) / log(1024);
                 uint8_t b_hi = round(base);
                 sprintf(str, "%.2f %s", pow(1024, base - b_hi), this->sizes[b_hi]);
                 fs_info_sensor->publish_state(str);
@@ -124,7 +138,7 @@ class FSInfoSensor : public PollingComponent, public TextSensor {
         }
 
         int64_t get_fs_used() {
-            #if defined(SDCARD) || defined(ESP32)
+            #if defined(SDCARD) || defined(USE_ESP32)
                 return aFS.totalBytes() - aFS.usedBytes();
             #else
                 FSInfo fs_info_;
