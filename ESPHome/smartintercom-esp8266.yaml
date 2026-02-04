@@ -144,6 +144,7 @@ external_components: # fix for removal of custom component in esphome 2025.xx an
 
 espaudio:
   id: audio_player
+  rate_multiplier: 0.5
 
 custom_component:
   - id: ftp_server

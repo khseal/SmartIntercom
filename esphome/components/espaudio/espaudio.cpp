@@ -6,12 +6,35 @@
 
 #include "esphome/core/log.h"
 
+#include <cmath>
+
 #if defined(USE_ESP32) && !defined(USE_ESP32_VARIANT_ESP32C3)
 #include "AudioOutputI2S.h"
-#define ESPAUDIO_OUTPUT() new AudioOutputI2S(0, AudioOutputI2S::INTERNAL_DAC)
+class ESPAudioOutputI2S final : public AudioOutputI2S {
+ public:
+  explicit ESPAudioOutputI2S(float rate_multiplier)
+      : AudioOutputI2S(0, AudioOutputI2S::INTERNAL_DAC), rate_multiplier_(rate_multiplier) {}
+
+  bool SetRate(int hz) override { return AudioOutputI2S::SetRate(this->scale_rate_(hz)); }
+
+ private:
+  float rate_multiplier_;
+
+  int scale_rate_(int hz) const { return static_cast<int>(std::lrintf(hz * this->rate_multiplier_)); }
+};
 #else
 #include "AudioOutputI2SNoDAC.h"
-#define ESPAUDIO_OUTPUT() new AudioOutputI2SNoDAC()
+class ESPAudioOutputI2SNoDAC final : public AudioOutputI2SNoDAC {
+ public:
+  explicit ESPAudioOutputI2SNoDAC(float rate_multiplier) : AudioOutputI2SNoDAC(), rate_multiplier_(rate_multiplier) {}
+
+  bool SetRate(int hz) override { return AudioOutputI2SNoDAC::SetRate(this->scale_rate_(hz)); }
+
+ private:
+  float rate_multiplier_;
+
+  int scale_rate_(int hz) const { return static_cast<int>(std::lrintf(hz * this->rate_multiplier_)); }
+};
 #endif
 
 #if defined(SDCARD)
@@ -165,7 +188,11 @@ bool ESPAudio::play_(AudioFileSource *src, GeneratorType type) {
   } else {
     return false;
   }
-  this->out_ = ESPAUDIO_OUTPUT();
+#if defined(USE_ESP32) && !defined(USE_ESP32_VARIANT_ESP32C3)
+  this->out_ = new ESPAudioOutputI2S(this->rate_multiplier_);
+#else
+  this->out_ = new ESPAudioOutputI2SNoDAC(this->rate_multiplier_);
+#endif
   return this->gen_->begin(src, this->out_);
 }
 

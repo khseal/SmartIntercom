@@ -26,6 +26,7 @@ class ESPAudio : public Component {
   bool play_data(const uint8_t *data, size_t size, GeneratorType type);
   void play(const char *filename);
   bool is_playing() const;
+  void set_rate_multiplier(float multiplier) { this->rate_multiplier_ = multiplier; }
 
  protected:
   ::AudioOutput *out_{};
@@ -33,6 +34,7 @@ class ESPAudio : public Component {
   ::AudioFileSource *src_{};
   ::AudioFileSourceBuffer *buf_{};
   bool fs_initialized_{};
+  float rate_multiplier_{1.0f};
 
   ::AudioFileSource *open_file_(const char *filename);
   ::AudioFileSource *open_stream_(const char *url);
